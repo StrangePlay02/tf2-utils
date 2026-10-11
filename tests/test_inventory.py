@@ -1,7 +1,10 @@
+from unittest.mock import Mock, patch
+
 import pytest
 
 from src.tf2_utils import InvalidInventory, map_inventory
 from src.tf2_utils.inventory import Inventory
+from src.tf2_utils.providers.steamcommunity import SteamCommunity
 from src.tf2_utils.utils import read_json_file
 
 INVENTORY = read_json_file("./tests/json/bot_inventory.json")
@@ -54,6 +57,36 @@ def test_steamapis_inventory_provider() -> None:
     inventory = Inventory("steamapis", "api_key")
     assert inventory.provider.__class__.__name__ == "SteamApis"
     assert inventory.provider.api_key == "api_key"
+
+
+@pytest.mark.parametrize("custom_headers", [None, {"user-agent": "custom-agent"}])
+@pytest.mark.parametrize("app_id,context_id", [(440, 2), (730, 3)])
+def test_steamcommunity_inventory_request(custom_headers, app_id, context_id) -> None:
+    inventory = Inventory()
+    if custom_headers is not None:
+        inventory.provider = SteamCommunity(headers=custom_headers)
+    response = Mock()
+    response.json.return_value = INVENTORY
+
+    with patch("src.tf2_utils.inventory.requests.get", return_value=response) as get:
+        for steam_id in ["76561198253325712", "76561198828172881"]:
+            assert inventory.fetch(steam_id, app_id, context_id) is INVENTORY
+            get.assert_called_with(
+                f"https://steamcommunity.com/inventory/"
+                f"{steam_id}/{app_id}/{context_id}",
+                params={"l": "english", "count": 2500},
+                headers=inventory.provider.headers,
+            )
+            headers = get.call_args.kwargs["headers"]
+            assert headers["Referer"] == (
+                f"https://steamcommunity.com/profiles/{steam_id}/inventory"
+            )
+            if custom_headers is None:
+                assert headers["User-Agent"].startswith("Mozilla/5.0 ")
+                assert "Chrome/" in headers["User-Agent"]
+            else:
+                assert headers["User-Agent"] == "custom-agent"
+            assert "Origin" not in headers
 
 
 def test_steamcommunity_inventory_fetch(steam_id: str) -> None:
