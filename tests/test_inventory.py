@@ -61,12 +61,13 @@ def test_steamapis_inventory_provider() -> None:
 @pytest.mark.parametrize("app_id,context_id", [(440, 2), (730, 3)])
 def test_steamcommunity_inventory_request(app_id, context_id) -> None:
     inventory = Inventory()
-    response = Mock()
-    response.json.return_value = INVENTORY
+    page = {**INVENTORY, "more_items": 0}
+    response = Mock(status_code=200)
+    response.json.return_value = page
 
     with patch("src.tf2_utils.inventory.requests.get", return_value=response) as get:
         for steam_id in ["76561198253325712", "76561198828172881"]:
-            assert inventory.fetch(steam_id, app_id, context_id) is INVENTORY
+            assert inventory.fetch(steam_id, app_id, context_id) is page
             get.assert_called_with(
                 f"https://steamcommunity.com/inventory/"
                 f"{steam_id}/{app_id}/{context_id}",
