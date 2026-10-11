@@ -4,9 +4,7 @@ from .provider import Provider
 
 
 class SteamCommunity(Provider):
-    def __init__(
-        self, api_key: str = "", headers: dict[str, str] | None = None
-    ) -> None:
+    def __init__(self, api_key: str = "") -> None:
         super().__init__(api_key)
         self.headers = CaseInsensitiveDict(
             {
@@ -17,8 +15,6 @@ class SteamCommunity(Provider):
                 )
             }
         )
-        if headers is not None:
-            self.headers.update(headers)
 
     def get_url_and_params(
         self, steam_id: str, app_id: int, context_id: int

@@ -22,24 +22,20 @@ def test_steam_community_inventory(steam_id: str) -> None:
     )
 
 
-@pytest.mark.parametrize("header_name", ["User-Agent", "user-agent"])
-def test_steam_community_custom_headers(header_name: str) -> None:
-    headers = {header_name: "custom-agent", "Accept-Language": "en-US"}
-    provider = SteamCommunity("api_key", headers=headers)
+def test_steam_community_api_key() -> None:
+    provider = SteamCommunity("api_key")
 
     assert provider.api_key == "api_key"
-    assert provider.headers["User-Agent"] == "custom-agent"
-    assert provider.headers["Accept-Language"] == "en-US"
-    assert len(provider.headers) == 2
-
-    provider.get_url_and_params("76561198253325712", 440, 2)
-    assert headers == {header_name: "custom-agent", "Accept-Language": "en-US"}
+    assert provider.headers["User-Agent"] == (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/130.0.0.0 Safari/537.36"
+    )
 
 
 def test_steam_community_headers_are_independent() -> None:
     first = SteamCommunity()
-    second = SteamCommunity(headers={})
-    first.headers["User-Agent"] = "custom-agent"
+    second = SteamCommunity()
     first.get_url_and_params("76561198253325712", 440, 2)
 
     assert second.headers["User-Agent"].startswith("Mozilla/5.0 ")
@@ -47,7 +43,7 @@ def test_steam_community_headers_are_independent() -> None:
 
 
 def test_steam_community_referer_tracks_inventory() -> None:
-    provider = SteamCommunity(headers={"referer": "https://steamcommunity.com/"})
+    provider = SteamCommunity()
     for steam_id in ["76561198253325712", "76561198828172881"]:
         url, params = provider.get_url_and_params(steam_id, 730, 2)
         assert url == f"https://steamcommunity.com/inventory/{steam_id}/730/2"

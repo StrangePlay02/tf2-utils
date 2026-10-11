@@ -4,7 +4,6 @@ import pytest
 
 from src.tf2_utils import InvalidInventory, map_inventory
 from src.tf2_utils.inventory import Inventory
-from src.tf2_utils.providers.steamcommunity import SteamCommunity
 from src.tf2_utils.utils import read_json_file
 
 INVENTORY = read_json_file("./tests/json/bot_inventory.json")
@@ -59,12 +58,9 @@ def test_steamapis_inventory_provider() -> None:
     assert inventory.provider.api_key == "api_key"
 
 
-@pytest.mark.parametrize("custom_headers", [None, {"user-agent": "custom-agent"}])
 @pytest.mark.parametrize("app_id,context_id", [(440, 2), (730, 3)])
-def test_steamcommunity_inventory_request(custom_headers, app_id, context_id) -> None:
+def test_steamcommunity_inventory_request(app_id, context_id) -> None:
     inventory = Inventory()
-    if custom_headers is not None:
-        inventory.provider = SteamCommunity(headers=custom_headers)
     response = Mock()
     response.json.return_value = INVENTORY
 
@@ -81,11 +77,11 @@ def test_steamcommunity_inventory_request(custom_headers, app_id, context_id) ->
             assert headers["Referer"] == (
                 f"https://steamcommunity.com/profiles/{steam_id}/inventory"
             )
-            if custom_headers is None:
-                assert headers["User-Agent"].startswith("Mozilla/5.0 ")
-                assert "Chrome/" in headers["User-Agent"]
-            else:
-                assert headers["User-Agent"] == "custom-agent"
+            assert headers["User-Agent"] == (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/130.0.0.0 Safari/537.36"
+            )
             assert "Origin" not in headers
 
 
